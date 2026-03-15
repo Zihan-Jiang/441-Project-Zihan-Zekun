@@ -15,6 +15,7 @@ from src.visualize import (
     save_results_table,
 )
 from src.config import MODEL_NAMES
+from src.statistics import one_sample_t_test, bootstrap_mean_ci
 
 
 def main():
@@ -142,7 +143,43 @@ def main():
     bt_results.to_csv(f"outputs/tables/{ticker}_{best_model_name}_backtest.csv", index=False)
 
     # -----------------------------
-    # 10) anomaly detection
+    # 10) statistical analysis
+    # -----------------------------
+    # 用 test set 的日收益率作为示例统计分析对象
+    # 这里先用 ret_1，你也可以以后改成 strategy return
+    test_returns = test_df["ret_1"]
+
+    ttest_result = one_sample_t_test(test_returns, mu0=0.0)
+    bootstrap_result = bootstrap_mean_ci(
+        test_returns,
+        n_boot=1000,
+        ci=0.95,
+        random_state=42
+    )
+
+    print("\nStatistical analysis (test returns):")
+    print("One-sample t-test result:")
+    print(ttest_result)
+
+    print("\nBootstrap 95% CI for mean return:")
+    print(bootstrap_result)
+
+    import pandas as pd
+    stats_df = pd.DataFrame([
+        {
+            "method": "one_sample_t_test",
+            **ttest_result
+        },
+        {
+            "method": "bootstrap_mean_ci",
+            **bootstrap_result
+        }
+    ])
+
+    stats_df.to_csv(f"outputs/tables/{ticker}_statistical_analysis.csv", index=False)
+
+    # -----------------------------
+    # 11) anomaly detection
     # -----------------------------
     anomaly_df = detect_anomalies(df_ticker, threshold=2.0)
 
@@ -157,6 +194,7 @@ def main():
     anomaly_df.to_csv(f"outputs/tables/{ticker}_anomaly_output.csv", index=False)
 
     print("\nAll outputs saved under outputs/")
+
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,3 @@
-import os
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,6 +11,7 @@ from src.backtest import rolling_backtest
 from src.anomaly import detect_anomalies
 from src.visualize import extract_feature_importance
 from src.config import MODEL_NAMES
+from src.statistics import one_sample_t_test, bootstrap_mean_ci
 
 
 st.set_page_config(
@@ -76,6 +76,31 @@ def run_pipeline(
 
     anomaly_df = detect_anomalies(df_ticker, threshold=anomaly_threshold)
 
+    # -----------------------------
+    # Statistical analysis
+    # -----------------------------
+    # 先使用 test set 的 ret_1 作为统计分析对象
+    test_returns = test_df["ret_1"]
+
+    ttest_result = one_sample_t_test(test_returns, mu0=0.0)
+    bootstrap_result = bootstrap_mean_ci(
+        test_returns,
+        n_boot=1000,
+        ci=0.95,
+        random_state=42
+    )
+
+    stats_df = pd.DataFrame([
+        {
+            "method": "one_sample_t_test",
+            **ttest_result
+        },
+        {
+            "method": "bootstrap_mean_ci",
+            **bootstrap_result
+        }
+    ])
+
     return {
         "df_ticker": df_ticker,
         "train_df": train_df,
@@ -88,6 +113,9 @@ def run_pipeline(
         "best_model_name": best_model_name,
         "bt_results": bt_results,
         "anomaly_df": anomaly_df,
+        "stats_df": stats_df,
+        "ttest_result": ttest_result,
+        "bootstrap_result": bootstrap_result,
     }
 
 
@@ -193,6 +221,16 @@ def plot_anomaly_price_chart(anomaly_df: pd.DataFrame):
     st.pyplot(fig)
 
 
+def plot_return_distribution(test_df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.hist(test_df["ret_1"].dropna(), bins=30)
+    ax.set_title("Distribution of Test Daily Returns")
+    ax.set_xlabel("Daily Return")
+    ax.set_ylabel("Frequency")
+    ax.grid(True)
+    st.pyplot(fig)
+
+
 # -----------------------------
 # Sidebar
 # -----------------------------
@@ -255,6 +293,9 @@ if run_button:
     best_model_name = output["best_model_name"]
     bt_results = output["bt_results"]
     anomaly_df = output["anomaly_df"]
+    stats_df = output["stats_df"]
+    ttest_result = output["ttest_result"]
+    bootstrap_result = output["bootstrap_result"]
 
     if selected_model_for_display not in fitted_models:
         selected_model_for_display = best_model_name
@@ -340,6 +381,36 @@ if run_button:
             anomalies_only[["Date", "Close", "vol_10", "vol_ratio_5", "anomaly_score"]].head(20),
             use_container_width=True
         )
+
+    # -----------------------------
+    # Section 8: Statistical analysis
+    # -----------------------------
+    st.header("8. Statistical Analysis")
+
+    st.markdown("This section adds a statistical inference component using hypothesis testing and bootstrapping on test-period daily returns.")
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Mean test return", f"{ttest_result['mean_return']:.6f}")
+    c2.metric("t-statistic", f"{ttest_result['t_statistic']:.4f}")
+    c3.metric("p-value", f"{ttest_result['p_value']:.4f}")
+
+    c4, c5 = st.columns(2)
+    c4.metric("Bootstrap CI lower", f"{bootstrap_result['ci_lower']:.6f}")
+    c5.metric("Bootstrap CI upper", f"{bootstrap_result['ci_upper']:.6f}")
+
+    st.subheader("Statistical Results Table")
+    st.dataframe(stats_df, use_container_width=True)
+
+    st.subheader("Return Distribution")
+    plot_return_distribution(test_df)
+
+    st.markdown(
+        """
+        **Interpretation**
+        - The one-sample t-test checks whether the average test-period daily return is statistically different from 0.
+        - The bootstrap confidence interval estimates the uncertainty around the mean return without relying heavily on parametric assumptions.
+        """
+    )
 
 else:
     st.info("Set parameters in the sidebar and click 'Run analysis'.")
