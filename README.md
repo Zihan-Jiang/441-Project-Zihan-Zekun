@@ -4,3 +4,6 @@ This project formulates short-term stock prediction as a supervised binary class
 ## Data Source
 Yahoo Finance
 ## Reference
+https://www.sciencedirect.com/science/article/pii/S2666827025000143?utm_source=chatgpt.com
+https://home.cs.colorado.edu/~mozer/Teaching/syllabi/6622/papers/Platt1999.pdf?utm_source=chatgpt.com
+https://link.springer.com/article/10.1007/BF00994018?utm_source=chatgpt.com
