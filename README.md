@@ -36,7 +36,7 @@ The raw dataset includes daily open, high, low, close, adjusted close, and tradi
 
 ## 4. Models Used
 
-This project uses classical machine learning models only. No deep learning models are used.
+This project uses classical machine learning models only.
 
 The models include:
 
@@ -174,19 +174,12 @@ http://localhost:8501
 
 Short-term stock direction prediction is difficult using only daily OHLCV data and technical indicators. Financial markets are noisy, non-stationary, and affected by many external factors that are not fully captured in this dataset.
 
-The ROC-AUC values are often close to 0.5, which suggests that classical machine learning models have limited predictive power for next-day stock direction prediction. However, the project still provides value by comparing models, evaluating performance over time, analyzing market regimes, identifying important features, and detecting anomalous market days.
 
 ## 13. Web Application
 
 The final product is an interactive Streamlit dashboard. Users can select a ticker, choose train and validation dates, run model comparison, inspect feature importance, evaluate rolling backtest performance, analyze market regimes, detect anomalous market days, and view statistical analysis results.
 
-## 14. Future Work
-
-Possible future improvements include:
-
-- Adding macroeconomic variables
-- Adding market index and sector-level features
-- Testing longer prediction horizons
-- Improving feature engineering
-- Adding permutation importance for model interpretation
-- Deploying the Streamlit dashboard online
+## 14. Reference
+https://www.sciencedirect.com/science/article/pii/S2666827025000143?utm_source=chatgpt.com
+https://home.cs.colorado.edu/~mozer/Teaching/syllabi/6622/papers/Platt1999.pdf?utm_source=chatgpt.com
+https://link.springer.com/article/10.1007/BF00994018?utm_source=chatgpt.com
