@@ -12,6 +12,7 @@ from src.anomaly import detect_anomalies
 from src.visualize import extract_feature_importance
 from src.config import MODEL_NAMES
 from src.statistics import one_sample_t_test, bootstrap_mean_ci
+from src.regime import summarize_backtest_by_regime
 
 
 st.set_page_config(
@@ -74,6 +75,8 @@ def run_pipeline(
         test_window=63
     )
 
+    regime_summary = summarize_backtest_by_regime(bt_results)
+
     anomaly_df = detect_anomalies(df_ticker, threshold=anomaly_threshold)
 
     # -----------------------------
@@ -112,6 +115,7 @@ def run_pipeline(
         "detailed_results": detailed_results,
         "best_model_name": best_model_name,
         "bt_results": bt_results,
+        "regime_summary": regime_summary,
         "anomaly_df": anomaly_df,
         "stats_df": stats_df,
         "ttest_result": ttest_result,
@@ -292,6 +296,7 @@ if run_button:
     detailed_results = output["detailed_results"]
     best_model_name = output["best_model_name"]
     bt_results = output["bt_results"]
+    regime_summary = output["regime_summary"]
     anomaly_df = output["anomaly_df"]
     stats_df = output["stats_df"]
     ttest_result = output["ttest_result"]
@@ -300,7 +305,7 @@ if run_button:
     if selected_model_for_display not in fitted_models:
         selected_model_for_display = best_model_name
 
-    st.success(f"Finished. Best model by test ROC-AUC: {best_model_name}")
+    st.success(f"Finished. Best model selected by validation ROC-AUC: {best_model_name}")
 
     # -----------------------------
     # Section 1: Data overview
@@ -363,10 +368,35 @@ if run_button:
     st.header("6. Rolling Backtest")
     plot_backtest_streamlit(bt_results)
 
+
     # -----------------------------
-    # Section 7: Anomaly detection
+    # Section 7: Market regime analysis
     # -----------------------------
-    st.header("7. Anomaly Detection")
+    st.header("7. Market Regime Analysis")
+
+    st.markdown(
+        """
+        This section summarizes rolling backtest performance across different market regimes.
+        It helps evaluate whether model performance changes under different market conditions.
+        """
+    )
+
+    st.dataframe(regime_summary, use_container_width=True)
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.bar(regime_summary["regime"].astype(str), regime_summary["avg_roc_auc"])
+    ax.set_xlabel("Market Regime")
+    ax.set_ylabel("Average ROC-AUC")
+    ax.set_title("Average Rolling Backtest ROC-AUC by Market Regime")
+    ax.tick_params(axis="x", rotation=25)
+    ax.grid(True)
+    st.pyplot(fig)
+
+
+    # -----------------------------
+    # Section 8: Anomaly detection
+    # -----------------------------
+    st.header("8. Anomaly Detection")
 
     c1, c2 = st.columns([2, 1])
 
@@ -378,14 +408,17 @@ if run_button:
         anomalies_only = anomaly_df[anomaly_df["is_anomaly"] == 1].copy()
         anomalies_only = anomalies_only.sort_values("anomaly_score", ascending=False)
         st.dataframe(
-            anomalies_only[["Date", "Close", "vol_10", "vol_ratio_5", "anomaly_score"]].head(20),
+            anomalies_only[
+                ["Date", "Close", "ret_1", "vol_10", "vol_ratio_5",
+                 "return_z", "volatility_z", "volume_z", "anomaly_score"]
+            ].head(20),
             use_container_width=True
         )
 
     # -----------------------------
-    # Section 8: Statistical analysis
+    # Section 9: Statistical analysis
     # -----------------------------
-    st.header("8. Statistical Analysis")
+    st.header("9. Statistical Analysis")
 
     st.markdown("This section adds a statistical inference component using hypothesis testing and bootstrapping on test-period daily returns.")
 

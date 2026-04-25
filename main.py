@@ -94,6 +94,7 @@ def main():
     # -----------------------------
     # 7) confusion matrix for best model
     # -----------------------------
+    # Select the best model using validation ROC-AUC.
     best_model_name = results_df.iloc[0]["model"]
 
     plot_confusion_matrix_for_model(

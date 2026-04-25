@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 from sklearn.metrics import (
     accuracy_score,
+    balanced_accuracy_score,
     precision_score,
     recall_score,
     f1_score,
@@ -21,14 +22,25 @@ def evaluate_classifier(model, X, y) -> dict:
     else:
         y_prob = None
 
+    y_array = np.array(y)
+    y_pred_array = np.array(y_pred)
+
+    true_positive_rate = float(np.mean(y_array == 1))
+    pred_positive_rate = float(np.mean(y_pred_array == 1))
+    majority_baseline_accuracy = max(true_positive_rate, 1 - true_positive_rate)
+
     metrics = {
         "accuracy": accuracy_score(y, y_pred),
+        "balanced_accuracy": balanced_accuracy_score(y, y_pred),
         "precision": precision_score(y, y_pred, zero_division=0),
         "recall": recall_score(y, y_pred, zero_division=0),
         "f1": f1_score(y, y_pred, zero_division=0),
+        "true_positive_rate": true_positive_rate,
+        "pred_positive_rate": pred_positive_rate,
+        "majority_baseline_accuracy": majority_baseline_accuracy,
         "confusion_matrix": confusion_matrix(y, y_pred),
-        "y_true": np.array(y),
-        "y_pred": y_pred,
+        "y_true": y_array,
+        "y_pred": y_pred_array,
         "y_prob": y_prob,
     }
 
